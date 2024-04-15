@@ -174,6 +174,20 @@ BigInt poseidon(List<BigInt> inputs) {
       return poseidon8(inputs);
     case 9:
       return poseidon9(inputs);
+    case 10:
+      return poseidon10(inputs);
+    case 11:
+      return poseidon11(inputs);
+    case 12:
+      return poseidon12(inputs);
+    case 13:
+      return poseidon13(inputs);
+    case 14:
+      return poseidon14(inputs);
+    case 15:
+      return poseidon15(inputs);
+    case 16:
+      return poseidon16(inputs);
     default:
       throw Exception('Invalid number of inputs');
   }
