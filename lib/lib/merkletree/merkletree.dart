@@ -14,15 +14,16 @@ import 'proof.dart' show Proof;
 import '../entry/entry.dart' show Entry, checkEntryInField;
 
 class Merkletree {
-  ITreeStorage _db;
-  IHash? _root;
-  bool _writable;
-  int _maxLevel;
+  final ITreeStorage _db;
+  final bool _writable;
+  final int _maxLevel;
 
-  Merkletree(ITreeStorage _db, bool _writable, int _maxLevels)
-      : _db = _db,
-        _writable = _writable,
-        _maxLevel = _maxLevels;
+  IHash? _root;
+
+  Merkletree(ITreeStorage db, bool writable, int maxLevels)
+      : _db = db,
+        _writable = writable,
+        _maxLevel = maxLevels;
 
   Future<IHash> root() async {
     final root = _root;
@@ -396,6 +397,21 @@ class Merkletree {
       await _db.setRoot(_root!);
     }
 
+    final nearestSibling = await _db.get(kHash.value);
+    if (nearestSibling?.type == NODE_TYPE_MIDDLE) {
+      Node newNode;
+      if (path[siblings.length - 1]) {
+        newNode = NodeMiddle(toUpload, ZERO_HASH);
+      } else {
+        newNode = NodeMiddle(ZERO_HASH, toUpload);
+      }
+      await addNode(newNode);
+      final newRootKey = await recalculatePathUntilRoot(
+          path, newNode, siblings.sublist(0, siblings.length - 1));
+      _root = newRootKey;
+      await _db.setRoot(_root!);
+    }
+
     for (var i = siblings.length - 2; i >= 0; i -= 1) {
       if (!bytesEqual(siblings[i].value, ZERO_HASH.value)) {
         Node newNode;
@@ -638,7 +654,8 @@ class Merkletree {
     output('}\n');
   }
 
-  Future<void> printGraphViz(IHash rootKey, void Function(String) output) async {
+  Future<void> printGraphViz(
+      IHash rootKey, void Function(String) output) async {
     if (bytesEqual(rootKey.value, ZERO_HASH.value)) {
       rootKey = await root();
     }
