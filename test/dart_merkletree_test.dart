@@ -591,11 +591,28 @@ void main() {
         }
       });
 
+      test('test delete leaf near middle node', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        final keys = [BigInt.from(7), BigInt.from(1), BigInt.from(5)];
+
+        keys.map((v) async {
+          await mt.add(v, v);
+          final (proof, _) = await mt.generateProof(v, await mt.root());
+          expect(proof.existence, isTrue);
+        });
+
+        keys.map((v) async {
+          await mt.delete(v);
+          final (proof, _) = await mt.generateProof(v, await mt.root());
+          expect(proof.existence, isFalse);
+        });
+      });
+
       test('test dump leafs and import leafs', () async {
         final sto1 = getTreeStorage(prefix: 'tree1');
-        final sto2 = getTreeStorage(prefix: 'tree2');
         final mt1 = Merkletree(sto1, true, 140);
-        final mt2 = Merkletree(sto2, true, 140);
 
         for (var i = 0; i < 10; i += 1) {
           var k = MAX_NUM_IN_FIELD - BigInt.from(i);
