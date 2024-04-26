@@ -97,7 +97,8 @@ void main() {
         expect((await sto.getRoot()).bigint().toString(),
             equals((await mt.root()).bigint().toString()));
 
-        final (proof, value) = await mt.generateProof(BigInt.parse('33'), null);
+        final (:proof, :value) =
+            await mt.generateProof(BigInt.parse('33'), null);
         expect(value.toString(), equals('44'));
 
         expect(
@@ -259,7 +260,8 @@ void main() {
           await mt.add(k, v);
         }
 
-        final (proof, value) = await mt.generateProof(BigInt.parse('42'), null);
+        final (:proof, :value) =
+            await mt.generateProof(BigInt.parse('42'), null);
         expect(value.toString(), equals('0'));
         final verRes = await verifyProof(
             await mt.root(), proof, BigInt.parse('42'), BigInt.parse('0'));
@@ -291,7 +293,8 @@ void main() {
           await mt.add(k, v);
         }
 
-        final (proof, _) = await mt.generateProof(BigInt.parse('4'), null);
+        final (:proof, value: _) =
+            await mt.generateProof(BigInt.parse('4'), null);
         final siblings = siblignsFroomProof(proof);
 
         expect(siblings.length, equals(6));
@@ -331,7 +334,8 @@ void main() {
         }
 
         // existence proof
-        var (proof, _) = await mt.generateProof(BigInt.parse('4'), null);
+        var (:proof, value: _) =
+            await mt.generateProof(BigInt.parse('4'), null);
         expect(proof.existence, equals(true));
         expect(
           await verifyProof(
@@ -346,12 +350,13 @@ void main() {
             '0003000000000000000000000000000000000000000000000000000000000007529cbedbda2bdd25fd6455551e55245fa6dc11a9d0c27dc0cd38fca44c17e40344ad686a18ba78b502c0b6f285c5c8393bde2f7a3e2abe586515e4d84533e3037b062539bde2d80749746986cf8f0001fd2cdbf9a89fcbf981a769daef49df06');
 
         for (var i = 8; i < 32; i += 1) {
-          final (proof, _) = await mt.generateProof(BigInt.from(i), null);
+          final (:proof, value: _) =
+              await mt.generateProof(BigInt.from(i), null);
           expect(proof.existence, equals(false));
         }
 
         // non-existence proof, node aux
-        proof = (await mt.generateProof(BigInt.parse('12'), null)).$1;
+        proof = (await mt.generateProof(BigInt.parse('12'), null)).proof;
         expect(proof.existence, equals(false));
         expect(proof.nodeAux, isNotNull);
         expect(
@@ -369,7 +374,7 @@ void main() {
         );
 
         // non-existence proof, node aux
-        proof = (await mt.generateProof(BigInt.parse('10'), null)).$1;
+        proof = (await mt.generateProof(BigInt.parse('10'), null)).proof;
         expect(proof.existence, equals(false));
         expect(proof.nodeAux, isNotNull);
         expect(
@@ -396,7 +401,8 @@ void main() {
         }
         // Invalid existence proof (node used for verification doesn't
         // correspond to node in the proof)
-        var (proof, _) = await mt.generateProof(BigInt.parse('4'), null);
+        var (:proof, value: _) =
+            await mt.generateProof(BigInt.parse('4'), null);
         expect(proof.existence, equals(true));
         expect(
             await verifyProof(
@@ -404,7 +410,7 @@ void main() {
             equals(false));
 
         // Invalid non-existence proof (Non-existence proof, diff. node aux)
-        proof = (await mt.generateProof(BigInt.parse('4'), null)).$1;
+        proof = (await mt.generateProof(BigInt.parse('4'), null)).proof;
         expect(proof.existence, equals(true));
         proof.existence = false;
         proof.nodeAux = NodeAux(
@@ -591,23 +597,501 @@ void main() {
         }
       });
 
-      test('test delete leaf near middle node', () async {
+      test('test delete leaf near middle node. Right branch', () async {
         final sto = getTreeStorage();
         final mt = Merkletree(sto, true, 10);
 
         final keys = [BigInt.from(7), BigInt.from(1), BigInt.from(5)];
 
-        keys.map((v) async {
-          await mt.add(v, v);
-          final (proof, _) = await mt.generateProof(v, await mt.root());
-          expect(proof.existence, isTrue);
-        });
+        final expectedSiblings = <String, List<BigInt>>{
+          '7': [],
+          '1': [
+            BigInt.zero,
+            BigInt.parse(
+                '3968539605503372859924195689353752825000692947459401078008697788408142999740')
+          ],
+          '5': [
+            BigInt.zero,
+            BigInt.parse(
+                '3968539605503372859924195689353752825000692947459401078008697788408142999740'),
+            BigInt.parse(
+                '1243904711429961858774220647610724273798918457991486031567244100767259239747'),
+          ]
+        };
 
-        keys.map((v) async {
-          await mt.delete(v);
-          final (proof, _) = await mt.generateProof(v, await mt.root());
-          expect(proof.existence, isFalse);
-        });
+        for (final k in keys) {
+          await mt.add(k, k);
+          final existProof = await mt.generateProof(k, await mt.root());
+          compareSiblings(expectedSiblings[k.toString()]!, existProof.proof);
+        }
+
+        final expectedSiblingsNonExist = <String, List<BigInt>>{
+          '7': [
+            BigInt.zero,
+            BigInt.parse(
+                '4274876798241152869364032215387952876266736406919374878317677138322903129320'),
+          ],
+          '1': [],
+          '5': []
+        };
+
+        for (final k in keys) {
+          await mt.delete(k);
+          final existProof = await mt.generateProof(k, await mt.root());
+          expect(existProof.proof.existence, isFalse);
+          compareSiblings(
+              expectedSiblingsNonExist[k.toString()]!, existProof.proof);
+        }
+      });
+
+      test('test delete leaf near middle node. Right branch deep', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        final keys = [BigInt.from(3), BigInt.from(7), BigInt.from(15)];
+
+        final expectedSiblings = <String, List<BigInt>>{
+          '3': [],
+          '7': [
+            BigInt.zero,
+            BigInt.zero,
+            BigInt.parse(
+                '14218827602097913497782608311388761513660285528499590827800641410537362569671'),
+          ],
+          '15': [
+            BigInt.zero,
+            BigInt.zero,
+            BigInt.parse(
+                '14218827602097913497782608311388761513660285528499590827800641410537362569671'),
+            BigInt.parse(
+                '3968539605503372859924195689353752825000692947459401078008697788408142999740'),
+          ]
+        };
+
+        for (final k in keys) {
+          await mt.add(k, k);
+          final existProof = await mt.generateProof(k, await mt.root());
+          expect(existProof.proof.existence, isTrue);
+          compareSiblings(expectedSiblings[k.toString()]!, existProof.proof);
+        }
+
+        final expectedSiblingsNonExist = <String, List<BigInt>>{
+          '3': [
+            BigInt.zero,
+            BigInt.zero,
+            BigInt.parse(
+                '10179745751648650481317481301133564568831136415508833815669215270622331305772'),
+          ],
+          '7': [],
+          '15': []
+        };
+
+        for (final k in keys) {
+          await mt.delete(k);
+          final existProof = await mt.generateProof(k, await mt.root());
+          expect(existProof.proof.existence, isFalse);
+          compareSiblings(
+              expectedSiblingsNonExist[k.toString()]!, existProof.proof);
+        }
+      });
+
+      test('test delete leaf near middle node. Left branch', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        final keys = [BigInt.from(6), BigInt.from(4), BigInt.from(2)];
+
+        final expectedSiblings = <String, List<BigInt>>{
+          '6': [],
+          '4': [
+            BigInt.zero,
+            BigInt.parse(
+                '8281804442553804052634892902276241371362897230229887706643673501401618941157')
+          ],
+          '2': [
+            BigInt.zero,
+            BigInt.parse(
+                '9054077202653694725190129562729426419405710792276939073869944863201489138082'),
+            BigInt.parse(
+                '8281804442553804052634892902276241371362897230229887706643673501401618941157'),
+          ]
+        };
+
+        for (final k in keys) {
+          await mt.add(k, k);
+          final existProof = await mt.generateProof(k, await mt.root());
+          expect(existProof.proof.existence, isTrue);
+          compareSiblings(expectedSiblings[k.toString()]!, existProof.proof);
+        }
+
+        final expectedSiblingsNonExist = <String, List<BigInt>>{
+          '6': [
+            BigInt.zero,
+            BigInt.parse(
+                '9054077202653694725190129562729426419405710792276939073869944863201489138082')
+          ],
+          '4': [],
+          '2': []
+        };
+
+        for (final k in keys) {
+          await mt.delete(k);
+          final existProof = await mt.generateProof(k, await mt.root());
+          expect(existProof.proof.existence, isFalse);
+          compareSiblings(
+              expectedSiblingsNonExist[k.toString()]!, existProof.proof);
+        }
+      });
+
+      test('test delete leaf near middle node. Left branch deep', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        final keys = [BigInt.from(4), BigInt.from(8), BigInt.from(16)];
+
+        final expectedSiblings = <String, List<BigInt>>{
+          '4': [],
+          '8': [
+            BigInt.zero,
+            BigInt.zero,
+            BigInt.parse(
+                '9054077202653694725190129562729426419405710792276939073869944863201489138082'),
+          ],
+          '16': [
+            BigInt.zero,
+            BigInt.zero,
+            BigInt.parse(
+                '9054077202653694725190129562729426419405710792276939073869944863201489138082'),
+            BigInt.parse(
+                '16390924951002018924619640791777477120654009069056735603697729984158734051481'),
+          ]
+        };
+
+        for (final k in keys) {
+          await mt.add(k, k);
+          final existProof = await mt.generateProof(k, await mt.root());
+          expect(existProof.proof.existence, isTrue);
+          compareSiblings(expectedSiblings[k.toString()]!, existProof.proof);
+        }
+
+        final expectedSiblingsNonExist = <String, List<BigInt>>{
+          '4': [
+            BigInt.zero,
+            BigInt.zero,
+            BigInt.parse(
+                '999617652929602377745081623447845927693004638040169919261337791961364573823')
+          ],
+          '8': [],
+          '16': []
+        };
+
+        for (final k in keys) {
+          await mt.delete(k);
+          final existProof = await mt.generateProof(k, await mt.root());
+          expect(existProof.proof.existence, isFalse);
+          compareSiblings(
+              expectedSiblingsNonExist[k.toString()]!, existProof.proof);
+        }
+      });
+
+      // Checking whether the last leaf will be moved to the root position
+      //
+      //	   root
+      //	 /     \
+      //	0    MiddleNode
+      //	      /   \
+      //	     01   11
+      //
+      // Up to:
+      //
+      //	root(11)
+      test('test up to root after delete. Right branch', () async {
+        final sto = getTreeStorage(prefix: 'right branch');
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.one, BigInt.one);
+        await mt.add(BigInt.from(3), BigInt.from(3));
+
+        await mt.delete(BigInt.one);
+
+        final leaf = await mt.getNode(await mt.root());
+        expect(leaf?.type, equals(NODE_TYPE_LEAF));
+        expect((leaf as NodeLeaf).entry[0].bigint(), equals(BigInt.from(3)));
+      });
+
+      // Checking whether the last leaf will be moved to the root position
+      //
+      //		   root
+      //	 	 /      \
+      //		MiddleNode  0
+      //		 /   \
+      //		100  010
+      //
+      // Up to:
+      //
+      //	root(100)
+      test('test up to root after delete. Left branch', () async {
+        final sto = getTreeStorage(prefix: 'left branch');
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.two, BigInt.two);
+        await mt.add(BigInt.from(4), BigInt.from(4));
+
+        await mt.delete(BigInt.two);
+
+        final leaf = await mt.getNode(await mt.root());
+        expect(leaf?.type, equals(NODE_TYPE_LEAF));
+        expect((leaf as NodeLeaf).entry[0].bigint(), equals(BigInt.from(4)));
+      });
+
+      // Checking whether the new root will be calculated from to leafs
+      //
+      //	  root
+      //	 /    \
+      //	10  MiddleNode
+      //	      /   \
+      //	     01   11
+      //
+      // Up to:
+      //
+      //	 root
+      //	 /  \
+      //	10  11
+      test('calculating of new root. Right branch', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.one, BigInt.one);
+        await mt.add(BigInt.from(3), BigInt.from(3));
+        await mt.add(BigInt.two, BigInt.two);
+
+        await mt.delete(BigInt.one);
+
+        final root = (await mt.getNode(await mt.root())) as NodeMiddle;
+
+        final lleaf = (await mt.getNode(root.childL)) as NodeLeaf;
+        final rleaf = (await mt.getNode(root.childR)) as NodeLeaf;
+
+        expect(lleaf.entry[0].bigint(), equals(BigInt.two));
+        expect(rleaf.entry[0].bigint(), equals(BigInt.from(3)));
+      });
+
+      // Checking whether the new root will be calculated from to leafs
+      //
+      //	         root
+      //	       /     \
+      //	 MiddleNode  01
+      //	  /   \
+      //	100   010
+      //
+      // Up to:
+      //
+      //	  root
+      //	 /   \
+      //	100  001
+      test('calculating of new root. Left branch', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.one, BigInt.one);
+        await mt.add(BigInt.two, BigInt.two);
+        await mt.add(BigInt.from(4), BigInt.from(4));
+
+        await mt.delete(BigInt.two);
+
+        final root = (await mt.getNode(await mt.root())) as NodeMiddle;
+
+        final lleaf = (await mt.getNode(root.childL)) as NodeLeaf;
+        final rleaf = (await mt.getNode(root.childR)) as NodeLeaf;
+
+        expect(lleaf.entry[0].bigint(), equals(BigInt.from(4)));
+        expect(rleaf.entry[0].bigint(), equals(BigInt.one));
+      });
+
+      // https://github.com/iden3/go-merkletree-sql/issues/23
+      test('test insert node after delete', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.one, BigInt.one);
+        await mt.add(BigInt.from(5), BigInt.from(5));
+        await mt.add(BigInt.from(7), BigInt.from(7));
+
+        final expectedSiblings = [
+          BigInt.zero,
+          BigInt.parse(
+              '4274876798241152869364032215387952876266736406919374878317677138322903129320'),
+        ];
+
+        await mt.delete(BigInt.from(7));
+        var proof = await mt.generateProof(BigInt.from(7), await mt.root());
+        expect(proof.proof.existence, isFalse);
+        compareSiblings(expectedSiblings, proof.proof);
+
+        await mt.add(BigInt.from(7), BigInt.from(7));
+        proof = await mt.generateProof(BigInt.from(7), await mt.root());
+        expect(proof.proof.existence, isTrue);
+        compareSiblings(expectedSiblings, proof.proof);
+      });
+
+      test('test insert deleted node then update it. Right branch', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.one, BigInt.one);
+        await mt.add(BigInt.from(5), BigInt.from(5));
+        await mt.add(BigInt.from(7), BigInt.from(7));
+
+        final expectedSiblings = [
+          BigInt.zero,
+          BigInt.parse(
+              '4274876798241152869364032215387952876266736406919374878317677138322903129320'),
+        ];
+
+        await mt.delete(BigInt.from(7));
+        var proof = await mt.generateProof(BigInt.from(7), await mt.root());
+        expect(proof.proof.existence, isFalse);
+        compareSiblings(expectedSiblings, proof.proof);
+
+        await mt.add(BigInt.from(7), BigInt.from(7));
+        proof = await mt.generateProof(BigInt.from(7), await mt.root());
+        expect(proof.proof.existence, isTrue);
+        compareSiblings(expectedSiblings, proof.proof);
+
+        await mt.update(BigInt.from(7), BigInt.from(100));
+        final updatedNode = await mt.get(BigInt.from(7));
+        expect(updatedNode.$1, equals(BigInt.from(7)));
+        expect(updatedNode.$2, equals(BigInt.from(100)));
+      });
+
+      test('test insert deleted node then update it. Left branch', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.from(6), BigInt.from(6));
+        await mt.add(BigInt.two, BigInt.two);
+        await mt.add(BigInt.from(4), BigInt.from(4));
+
+        final expectedSiblings = [
+          BigInt.zero,
+          BigInt.parse(
+              '8485562453225409715331824380162827639878522662998299574537757078697535221073'),
+        ];
+
+        await mt.delete(BigInt.from(4));
+        var proof = await mt.generateProof(BigInt.from(4), await mt.root());
+        expect(proof.proof.existence, isFalse);
+        compareSiblings(expectedSiblings, proof.proof);
+
+        await mt.add(BigInt.from(4), BigInt.from(4));
+        proof = await mt.generateProof(BigInt.from(4), await mt.root());
+        expect(proof.proof.existence, isTrue);
+        compareSiblings(expectedSiblings, proof.proof);
+
+        await mt.update(BigInt.from(4), BigInt.from(100));
+        final updatedNode = await mt.get(BigInt.from(4));
+        expect(updatedNode.$1, equals(BigInt.from(4)));
+        expect(updatedNode.$2, equals(BigInt.from(100)));
+      });
+
+      test('test push leaf already exists. Right branch', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.one, BigInt.one);
+        await mt.add(BigInt.from(5), BigInt.from(5));
+        await mt.add(BigInt.from(7), BigInt.from(7));
+        await mt.add(BigInt.from(3), BigInt.from(3));
+
+        final expectedSiblingsNonExist = [
+          BigInt.zero,
+          BigInt.parse(
+              '4274876798241152869364032215387952876266736406919374878317677138322903129320')
+        ];
+        await mt.delete(BigInt.from(3));
+        var proof = await mt.generateProof(BigInt.from(3), await mt.root());
+        expect(proof.proof.existence, isFalse);
+        compareSiblings(expectedSiblingsNonExist, proof.proof);
+
+        final expectedSiblingsExist = [
+          BigInt.zero,
+          BigInt.parse(
+              '4274876798241152869364032215387952876266736406919374878317677138322903129320'),
+          BigInt.parse(
+              '3968539605503372859924195689353752825000692947459401078008697788408142999740'),
+        ];
+        await mt.add(BigInt.from(3), BigInt.from(3));
+        proof = await mt.generateProof(BigInt.from(3), await mt.root());
+        expect(proof.proof.existence, isTrue);
+        compareSiblings(expectedSiblingsExist, proof.proof);
+      });
+
+      test('test push leaf already exists. Left branch', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.from(6), BigInt.from(6));
+        await mt.add(BigInt.two, BigInt.two);
+        await mt.add(BigInt.from(4), BigInt.from(4));
+        await mt.add(BigInt.from(8), BigInt.from(8));
+
+        final expectedSiblingsNonExist = [
+          BigInt.zero,
+          BigInt.parse(
+              '8485562453225409715331824380162827639878522662998299574537757078697535221073'),
+        ];
+        await mt.delete(BigInt.from(8));
+        var proof = await mt.generateProof(BigInt.from(8), await mt.root());
+        expect(proof.proof.existence, isFalse);
+        compareSiblings(expectedSiblingsNonExist, proof.proof);
+
+        final expectedSiblingsExist = [
+          BigInt.zero,
+          BigInt.parse(
+              '8485562453225409715331824380162827639878522662998299574537757078697535221073'),
+          BigInt.parse(
+              '9054077202653694725190129562729426419405710792276939073869944863201489138082'),
+        ];
+        await mt.add(BigInt.from(8), BigInt.from(8));
+        proof = await mt.generateProof(BigInt.from(8), await mt.root());
+        expect(proof.proof.existence, isTrue);
+        compareSiblings(expectedSiblingsExist, proof.proof);
+      });
+
+      test('test up nodes to two levels. Right branch', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.one, BigInt.one);
+        await mt.add(BigInt.from(7), BigInt.from(7));
+        await mt.add(BigInt.from(15), BigInt.from(15));
+        await mt.delete(BigInt.from(15));
+
+        final proof = await mt.generateProof(BigInt.from(15), await mt.root());
+        expect(proof.proof.existence, isFalse);
+        compareSiblings([
+          BigInt.zero,
+          BigInt.parse(
+              '1243904711429961858774220647610724273798918457991486031567244100767259239747')
+        ], proof.proof);
+      });
+
+      test('test up nodes to two levels. Left branch', () async {
+        final sto = getTreeStorage();
+        final mt = Merkletree(sto, true, 10);
+
+        await mt.add(BigInt.two, BigInt.two);
+        await mt.add(BigInt.from(8), BigInt.from(8));
+        await mt.add(BigInt.from(16), BigInt.from(16));
+        await mt.delete(BigInt.from(16));
+
+        final proof = await mt.generateProof(BigInt.from(16), await mt.root());
+        expect(proof.proof.existence, isFalse);
+        compareSiblings([
+          BigInt.zero,
+          BigInt.parse(
+              '849831128489032619062850458217693666094013083866167024127442191257793527951')
+        ], proof.proof);
       });
 
       test('test dump leafs and import leafs', () async {
@@ -765,7 +1249,7 @@ void main() {
           await tree.add(BigInt.from(i), BigInt.from(i));
         }
 
-        final (proof, _) = await tree.generateProof(BigInt.from(9), null);
+        final (:proof, value: _) = await tree.generateProof(BigInt.from(9), null);
 
         final proofModel = jsonEncode(proof.toJson());
 
@@ -883,5 +1367,13 @@ void main() {
         expect(bytes[7], equals(0));
       });
     });
+  }
+}
+
+void compareSiblings(List<BigInt> expectedSiblings, Proof p) {
+  final actualSiblings = p.allSiblings();
+  expect(actualSiblings.length, equals(expectedSiblings.length));
+  for (var i = 0; i < expectedSiblings.length; i++) {
+    expect(actualSiblings[i].bigint(), equals(expectedSiblings[i]));
   }
 }

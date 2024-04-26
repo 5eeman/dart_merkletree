@@ -397,7 +397,7 @@ class Merkletree {
       await _db.setRoot(_root!);
     }
 
-    final nearestSibling = await _db.get(kHash.value);
+    final nearestSibling = await _db.get(toUpload.value);
     if (nearestSibling?.type == NODE_TYPE_MIDDLE) {
       Node newNode;
       if (path[siblings.length - 1]) {
@@ -410,6 +410,7 @@ class Merkletree {
           path, newNode, siblings.sublist(0, siblings.length - 1));
       _root = newRootKey;
       await _db.setRoot(_root!);
+      return;
     }
 
     for (var i = siblings.length - 2; i >= 0; i -= 1) {
@@ -481,7 +482,7 @@ class Merkletree {
       rootKey = await root();
     }
 
-    final (proof, value) = await generateProof(k, rootKey);
+    final (:proof, :value) = await generateProof(k, rootKey);
     final cp = CircomVerifierProof();
     cp.root = rootKey;
     cp.siblings = proof.allSiblings();
@@ -505,7 +506,7 @@ class Merkletree {
     return cp;
   }
 
-  Future<(Proof proof, BigInt value)> generateProof(
+  Future<({Proof proof, BigInt value})> generateProof(
     BigInt k,
     IHash? rootKey,
   ) async {
@@ -531,24 +532,24 @@ class Merkletree {
       switch (n.type) {
         case NODE_TYPE_EMPTY:
           return (
-            Proof(
+            proof: Proof(
               existence: existence,
               nodeAux: nodeAux,
               siblings: siblings,
             ),
-            BigInt.zero,
+            value: BigInt.zero,
           );
         case NODE_TYPE_LEAF:
           if (bytesEqual(kHash.value, (n as NodeLeaf).entry[0].value)) {
             existence = true;
 
             return (
-              Proof(
+              proof: Proof(
                 existence: existence,
                 nodeAux: nodeAux,
                 siblings: siblings,
               ),
-              n.entry[1].bigint(),
+              value: n.entry[1].bigint(),
             );
           }
           nodeAux = NodeAux(
@@ -556,12 +557,12 @@ class Merkletree {
             value: n.entry[1],
           );
           return (
-            Proof(
+            proof: Proof(
               existence: existence,
               nodeAux: nodeAux,
               siblings: siblings,
             ),
-            n.entry[1].bigint(),
+            value: n.entry[1].bigint(),
           );
         case NODE_TYPE_MIDDLE:
           n as NodeMiddle;
