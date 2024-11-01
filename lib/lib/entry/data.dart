@@ -35,11 +35,23 @@ class Data {
     return b;
   }
 
-  bool equal(Data d2) {
-    return (bytesEqual(value[0].value, d2.value[0].value) &&
-        bytesEqual(value[1].value, d2.value[1].value) &&
-        bytesEqual(value[2].value, d2.value[2].value) &&
-        bytesEqual(value[3].value, d2.value[3].value));
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Data &&
+        (bytesEqual(value[0].value, other.value[0].value) &&
+            bytesEqual(value[1].value, other.value[1].value) &&
+            bytesEqual(value[2].value, other.value[2].value) &&
+            bytesEqual(value[3].value, other.value[3].value));
+  }
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() {
+    return 'Data{value: $value}';
   }
 }
 

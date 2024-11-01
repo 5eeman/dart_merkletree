@@ -55,18 +55,8 @@ class Hash implements IHash {
   // }
 
   @override
-  String string() {
-    return bigint().toRadixString(10);
-  }
-
-  @override
   String hex() {
     return bytes2Hex(_bytes ?? _zeroHash);
-  }
-
-  @override
-  bool equals(IHash hash) {
-    return bytesEqual(value, hash.value);
   }
 
   @override
@@ -107,6 +97,19 @@ class Hash implements IHash {
     final bytes = convert.hex.decode(h);
 
     return Hash(Uint8List.fromList(bytes));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is Hash && bytesEqual(value, other.value);
+  }
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() {
+    return bigint().toRadixString(10);
   }
 }
 

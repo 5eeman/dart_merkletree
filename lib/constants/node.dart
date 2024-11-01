@@ -1,4 +1,3 @@
-// middle node.ts with children
 import 'dart:typed_data';
 
 import '../types/node.dart';

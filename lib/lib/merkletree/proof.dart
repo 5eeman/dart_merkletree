@@ -14,15 +14,18 @@ import '../utils/node.dart' show leafKey;
 import '../errors/proof.dart' show ErrNodeAuxNonExistAgainstHIndex;
 import '../../types/types.dart' show Bytes, IHash;
 
-abstract class ProofJSON {
+abstract interface class ProofJSON {
   bool get existence;
 
   List<String> get siblings;
 
+  NodeAuxJSON? get node_aux;
+
+  @Deprecated("Please use ProofJSON.node_aux instead")
   NodeAuxJSON? get nodeAux;
 }
 
-abstract class NodeAuxJSON {
+abstract interface class NodeAuxJSON {
   String get key;
 
   String get value;
@@ -30,7 +33,7 @@ abstract class NodeAuxJSON {
 
 class Proof {
   bool existence;
-  int _depth;
+  int _depth = 0;
 
   // notempties is a bitmap of non-empty siblings found in siblings
   late Bytes _notEmpties;
@@ -41,7 +44,7 @@ class Proof {
     required Siblings siblings,
     this.nodeAux,
     this.existence = false,
-  }) : _depth = siblings.length {
+  }) {
     final (newSiblings, notEmpties) = reduceSiblings(siblings);
     _siblings = newSiblings;
     _notEmpties = notEmpties;
@@ -87,11 +90,11 @@ class Proof {
     final nodeAux = this.nodeAux;
     return {
       "existence": existence,
-      "siblings": allSiblings().map((s) => s.string()).toList(),
-      "nodeAux": nodeAux != null
+      "siblings": allSiblings().map((s) => s.toString()).toList(),
+      "node_aux": nodeAux != null
           ? {
-              "key": nodeAux.key.string(),
-              "value": nodeAux.value.string(),
+              "key": nodeAux.key.toString(),
+              "value": nodeAux.value.toString(),
             }
           : null,
     };
@@ -99,7 +102,7 @@ class Proof {
 
   factory Proof.fromJson(Map<String, dynamic> obj) {
     NodeAux? nodeAux;
-    final objNodeAux = obj["nodeAux"];
+    final objNodeAux = obj["node_aux"] ?? obj["nodeAux"];
     if (objNodeAux != null) {
       nodeAux = NodeAux(
         key: Hash.fromString(objNodeAux["key"]),
@@ -140,12 +143,29 @@ class Proof {
     }
     return allSiblings;
   }
+
+  (Siblings siblings, Uint8List notEmpties) reduceSiblings(Siblings? siblings) {
+    final Siblings reducedSiblings = [];
+    final notEmpties = Uint8List(NOT_EMPTIES_LEN);
+
+    if (siblings == null) {
+      return (reducedSiblings, notEmpties);
+    }
+    for (var i = 0; i < siblings.length; i++) {
+      final sibling = siblings[i];
+      if (sibling.toString() != ZERO_HASH.toString()) {
+        setBitBigEndian(notEmpties, i);
+        reducedSiblings.add(sibling);
+        _depth = i + 1;
+      }
+    }
+    return (reducedSiblings, notEmpties);
+  }
 }
 
-/**
- * @deprecated The method should not be used and will be removed in the next major version,
- * please use proof.allSiblings instead
- */
+/// @deprecated The method should not be used and will be removed in the next major version,
+/// please use proof.allSiblings instead
+@Deprecated("Please use Proof.allSiblings instead")
 Siblings siblignsFroomProof(Proof proof) {
   return proof.allSiblings();
 }
@@ -199,22 +219,4 @@ Future<IHash> rootFromProof(Proof proof, BigInt k, BigInt v) async {
   }
 
   return midKey;
-}
-
-(Siblings siblings, Uint8List notEmpties) reduceSiblings(Siblings? siblings) {
-  final Siblings reducedSiblings = [];
-  final notEmpties = Uint8List(NOT_EMPTIES_LEN);
-
-  if (siblings == null) {
-    return (reducedSiblings, notEmpties);
-  }
-  for (var i = 0; i < siblings.length; i++) {
-    final sibling = siblings[i];
-    // TODO(moria): Copy pasted from JS, check if this is correct and necessary
-    if (sibling.string() != ZERO_HASH.string()) {
-      setBitBigEndian(notEmpties, i);
-      reducedSiblings.add(sibling);
-    }
-  }
-  return (reducedSiblings, notEmpties);
 }

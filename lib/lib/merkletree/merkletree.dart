@@ -630,10 +630,10 @@ class Merkletree {
         case NODE_TYPE_EMPTY:
           break;
         case NODE_TYPE_LEAF:
-          output('"${k.string()}" [style=filled]');
+          output('"${k.toString()}" [style=filled]');
           break;
         case NODE_TYPE_MIDDLE:
-          lr = [(n as NodeMiddle).childL.string(), (n).childR.string()];
+          lr = [(n as NodeMiddle).childL.toString(), (n).childR.toString()];
           emptyNodes = '';
 
           for (final (i, s) in lr.indexed) {
@@ -644,7 +644,7 @@ class Merkletree {
             }
           }
 
-          output('"${k.string()}" -> {"${lr[1]}"}');
+          output('"${k.toString()}" -> {"${lr[1]}"}');
           output(emptyNodes);
           break;
         default:

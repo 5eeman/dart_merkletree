@@ -22,7 +22,18 @@ class ElemBytes {
     return newBigIntFromBytes(swapEndianness(_bytes));
   }
 
-  String string() {
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is ElemBytes && _bytes == other._bytes;
+  }
+
+  @override
+  int get hashCode => _bytes.hashCode;
+
+  @override
+  String toString() {
     final hexStr = bytes2Hex(_bytes.sublist(0, 4));
     return '$hexStr...';
   }

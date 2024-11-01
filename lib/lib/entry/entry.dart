@@ -51,12 +51,21 @@ class Entry {
     return _data.value;
   }
 
-  bool equal(Entry e2) {
-    return _data.equal(e2.data);
-  }
-
   Entry clone() {
     return Entry(_data);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is Entry && _data == other.data;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() {
+    return 'Entry{data: $data}';
   }
 }
 

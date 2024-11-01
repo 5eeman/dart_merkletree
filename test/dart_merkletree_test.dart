@@ -73,7 +73,7 @@ void main() {
       test('test new merkle tree', () async {
         final sto = getTreeStorage();
         final mt = Merkletree(sto, true, 10);
-        expect((await mt.root()).string(), equals('0'));
+        expect((await mt.root()).toString(), equals('0'));
 
         await mt.add(BigInt.one, BigInt.parse('2'));
         expect(
@@ -147,8 +147,8 @@ void main() {
         }
 
         expect(
-          (await mt1.root()).string(),
-          equals((await mt2.root()).string()),
+          (await mt1.root()).toString(),
+          equals((await mt2.root()).toString()),
         );
         expect(
           (await mt1.root()).hex(),
@@ -224,7 +224,7 @@ void main() {
         }
 
         final dbRoot = await sto.getRoot();
-        expect(dbRoot.string(), equals((await mt.root()).string()));
+        expect(dbRoot.toString(), equals((await mt.root()).toString()));
       });
 
       test('test update 2', () async {
@@ -245,8 +245,8 @@ void main() {
         await mt1.update(BigInt.parse('2'), BigInt.parse('22'));
         await mt2.update(BigInt.parse('9876'), BigInt.parse('6789'));
 
-        expect(
-            (await mt1.root()).string(), equals((await mt2.root()).string()));
+        expect((await mt1.root()).toString(),
+            equals((await mt2.root()).toString()));
       });
 
       test('test generate and verify proof 128', () async {
@@ -295,7 +295,7 @@ void main() {
 
         final (:proof, value: _) =
             await mt.generateProof(BigInt.parse('4'), null);
-        final siblings = siblignsFroomProof(proof);
+        final siblings = proof.allSiblings();
 
         expect(siblings.length, equals(6));
 
@@ -426,38 +426,38 @@ void main() {
       test('test delete', () async {
         final sto = getTreeStorage();
         final mt = Merkletree(sto, true, 10);
-        expect((await mt.root()).string(), equals('0'));
+        expect((await mt.root()).toString(), equals('0'));
 
         await mt.add(BigInt.one, BigInt.parse('2'));
         expect(
-            (await mt.root()).string(),
+            (await mt.root()).toString(),
             equals(
                 '13578938674299138072471463694055224830892726234048532520316387704878000008795'));
 
         await mt.add(BigInt.parse('33'), BigInt.parse('44'));
         expect(
-            (await mt.root()).string(),
+            (await mt.root()).toString(),
             equals(
                 '5412393676474193513566895793055462193090331607895808993925969873307089394741'));
 
         await mt.add(BigInt.parse('1234'), BigInt.parse('9876'));
         expect(
-            (await mt.root()).string(),
+            (await mt.root()).toString(),
             equals(
                 '14204494359367183802864593755198662203838502594566452929175967972147978322084'));
 
         await mt.delete(BigInt.parse('33'));
         expect(
-            (await mt.root()).string(),
+            (await mt.root()).toString(),
             equals(
                 '15550352095346187559699212771793131433118240951738528922418613687814377955591'));
 
         await mt.delete(BigInt.parse('1234'));
         await mt.delete(BigInt.one);
 
-        expect((await mt.root()).string(), equals('0'));
-        expect(
-            (await mt.root()).string(), equals((await sto.getRoot()).string()));
+        expect((await mt.root()).toString(), equals('0'));
+        expect((await mt.root()).toString(),
+            equals((await sto.getRoot()).toString()));
       });
 
       test('test delete 2', () async {
@@ -472,7 +472,7 @@ void main() {
           await mt1.add(k, v);
         }
 
-        final expectedRootStr = (await mt1.root()).string();
+        final expectedRootStr = (await mt1.root()).toString();
 
         final k = BigInt.parse('8');
         final v = BigInt.parse('0');
@@ -480,7 +480,7 @@ void main() {
         await mt1.add(k, v);
         await mt1.delete(k);
 
-        expect(expectedRootStr, equals((await mt1.root()).string()));
+        expect(expectedRootStr, equals((await mt1.root()).toString()));
 
         for (var i = 0; i < 8; i += 1) {
           final k = BigInt.from(i);
@@ -488,8 +488,8 @@ void main() {
           await mt2.add(k, v);
         }
 
-        expect(
-            (await mt1.root()).string(), equals((await mt2.root()).string()));
+        expect((await mt1.root()).toString(),
+            equals((await mt2.root()).toString()));
       });
 
       test('test delete 3', () async {
@@ -502,20 +502,20 @@ void main() {
         await mt1.add(BigInt.parse('2'), BigInt.parse('2'));
 
         expect(
-            (await mt1.root()).string(),
+            (await mt1.root()).toString(),
             equals(
                 '19060075022714027595905950662613111880864833370144986660188929919683258088314'));
 
         await mt1.delete(BigInt.one);
 
         expect(
-            (await mt1.root()).string(),
+            (await mt1.root()).toString(),
             equals(
                 '849831128489032619062850458217693666094013083866167024127442191257793527951'));
 
         await mt2.add(BigInt.parse('2'), BigInt.parse('2'));
-        expect(
-            (await mt1.root()).string(), equals((await mt2.root()).string()));
+        expect((await mt1.root()).toString(),
+            equals((await mt2.root()).toString()));
       });
 
       test('test delete 4', () async {
@@ -529,21 +529,21 @@ void main() {
         await mt1.add(BigInt.parse('3'), BigInt.parse('3'));
 
         expect(
-            (await mt1.root()).string(),
+            (await mt1.root()).toString(),
             equals(
                 '14109632483797541575275728657193822866549917334388996328141438956557066918117'));
 
         await mt1.delete(BigInt.one);
 
         expect(
-            (await mt1.root()).string(),
+            (await mt1.root()).toString(),
             equals(
                 '159935162486187606489815340465698714590556679404589449576549073038844694972'));
 
         await mt2.add(BigInt.parse('2'), BigInt.parse('2'));
         await mt2.add(BigInt.parse('3'), BigInt.parse('3'));
-        expect(
-            (await mt1.root()).string(), equals((await mt2.root()).string()));
+        expect((await mt1.root()).toString(),
+            equals((await mt2.root()).toString()));
       });
 
       test('test delete 5', () async {
@@ -556,20 +556,20 @@ void main() {
         await mt1.add(BigInt.parse('33'), BigInt.parse('44'));
 
         expect(
-            (await mt1.root()).string(),
+            (await mt1.root()).toString(),
             equals(
                 '5412393676474193513566895793055462193090331607895808993925969873307089394741'));
 
         await mt1.delete(BigInt.one);
 
         expect(
-            (await mt1.root()).string(),
+            (await mt1.root()).toString(),
             equals(
                 '18869260084287237667925661423624848342947598951870765316380602291081195309822'));
 
         await mt2.add(BigInt.parse('33'), BigInt.parse('44'));
-        expect(
-            (await mt1.root()).string(), equals((await mt2.root()).string()));
+        expect((await mt1.root()).toString(),
+            equals((await mt2.root()).toString()));
       });
 
       test('test delete not existing keys', () async {
@@ -588,7 +588,7 @@ void main() {
         }
 
         await mt.delete(BigInt.one);
-        expect((await mt.root()).string(), equals('0'));
+        expect((await mt.root()).toString(), equals('0'));
 
         try {
           await mt.delete(BigInt.parse('33'));
@@ -1112,22 +1112,22 @@ void main() {
         final sto = getTreeStorage();
         final mt = Merkletree(sto, true, 10);
 
-        expect((await mt.root()).string(), equals('0'));
+        expect((await mt.root()).toString(), equals('0'));
 
         var cp = await mt.addAndGetCircomProof(BigInt.one, BigInt.parse('2'));
 
-        expect(cp.oldRoot.string(), equals('0'));
+        expect(cp.oldRoot.toString(), equals('0'));
         expect(
-            cp.newRoot.string(),
+            cp.newRoot.toString(),
             equals(
                 '13578938674299138072471463694055224830892726234048532520316387704878000008795'));
-        expect(cp.oldKey.string(), equals('0'));
-        expect(cp.oldValue.string(), equals('0'));
-        expect(cp.newKey.string(), equals('1'));
-        expect(cp.newValue.string(), equals('2'));
+        expect(cp.oldKey.toString(), equals('0'));
+        expect(cp.oldValue.toString(), equals('0'));
+        expect(cp.newKey.toString(), equals('1'));
+        expect(cp.newValue.toString(), equals('2'));
         expect(cp.isOld0, equals(true));
         for (var s in cp.siblings) {
-          expect(s.string(), equals('0'));
+          expect(s.toString(), equals('0'));
         }
         expect(mt.maxLevels, equals(cp.siblings.length));
 
@@ -1135,20 +1135,20 @@ void main() {
             BigInt.parse('33'), BigInt.parse('44'));
 
         expect(
-            cp.oldRoot.string(),
+            cp.oldRoot.toString(),
             equals(
                 '13578938674299138072471463694055224830892726234048532520316387704878000008795'));
         expect(
-            cp.newRoot.string(),
+            cp.newRoot.toString(),
             equals(
                 '5412393676474193513566895793055462193090331607895808993925969873307089394741'));
-        expect(cp.oldKey.string(), equals('1'));
-        expect(cp.oldValue.string(), equals('2'));
-        expect(cp.newKey.string(), equals('33'));
-        expect(cp.newValue.string(), equals('44'));
+        expect(cp.oldKey.toString(), equals('1'));
+        expect(cp.oldValue.toString(), equals('2'));
+        expect(cp.newKey.toString(), equals('33'));
+        expect(cp.newValue.toString(), equals('44'));
         expect(cp.isOld0, equals(false));
         for (var s in cp.siblings) {
-          expect(s.string(), equals('0'));
+          expect(s.toString(), equals('0'));
         }
         expect(mt.maxLevels, equals(cp.siblings.length));
 
@@ -1156,22 +1156,22 @@ void main() {
             BigInt.parse('55'), BigInt.parse('66'));
 
         expect(
-            cp.oldRoot.string(),
+            cp.oldRoot.toString(),
             equals(
                 '5412393676474193513566895793055462193090331607895808993925969873307089394741'));
         expect(
-            cp.newRoot.string(),
+            cp.newRoot.toString(),
             equals(
                 '5094364082618099436543535513148866130251600642297988457797401489780171282025'));
-        expect(cp.oldKey.string(), equals('0'));
-        expect(cp.oldValue.string(), equals('0'));
-        expect(cp.newKey.string(), equals('55'));
-        expect(cp.newValue.string(), equals('66'));
+        expect(cp.oldKey.toString(), equals('0'));
+        expect(cp.oldValue.toString(), equals('0'));
+        expect(cp.newKey.toString(), equals('55'));
+        expect(cp.newValue.toString(), equals('66'));
         expect(cp.isOld0, equals(true));
 
         for (final (idx, s) in cp.siblings.indexed) {
           expect(
-            s.string(),
+            s.toString(),
             equals(
               idx == 1
                   ? '21312042436525850949775663177240566532157857119003189090405819719191539342280'
@@ -1197,36 +1197,36 @@ void main() {
 
         final cp = await mt.update(BigInt.parse('10'), BigInt.parse('1024'));
         expect(
-            cp.oldRoot.string(),
+            cp.oldRoot.toString(),
             equals(
                 '3901088098157312895771168508102875327412498476307103941861116446804059788045'));
         expect(
-            cp.newRoot.string(),
+            cp.newRoot.toString(),
             equals(
                 '18587862578201383535363956627488622136678432340275446723812600963773389007517'));
-        expect(cp.oldKey.string(), equals('10'));
-        expect(cp.oldValue.string(), equals('20'));
-        expect(cp.newKey.string(), equals('10'));
-        expect(cp.newValue.string(), equals('1024'));
+        expect(cp.oldKey.toString(), equals('10'));
+        expect(cp.oldValue.toString(), equals('20'));
+        expect(cp.newKey.toString(), equals('10'));
+        expect(cp.newValue.toString(), equals('1024'));
         expect(cp.isOld0, equals(false));
         expect(
-            cp.siblings[0].string(),
+            cp.siblings[0].toString(),
             equals(
                 '3493055760199345983787399479799897884337329583575225430469748865784580035592'));
         expect(
-            cp.siblings[1].string(),
+            cp.siblings[1].toString(),
             equals(
                 '20201609720365205433999360001442791710365537253733030676534981802168302054263'));
         expect(
-            cp.siblings[2].string(),
+            cp.siblings[2].toString(),
             equals(
                 '18790542149740435554763618183910097219145811410462734411095932062387939731734'));
         expect(
-            cp.siblings[3].string(),
+            cp.siblings[3].toString(),
             equals(
                 '15930030482599007570177067416534114035267479078907080052418814162004846408322'));
         cp.siblings.sublist(4).forEach((s) {
-          expect(s.string(), equals('0'));
+          expect(s.toString(), equals('0'));
         });
       });
 
@@ -1249,16 +1249,17 @@ void main() {
           await tree.add(BigInt.from(i), BigInt.from(i));
         }
 
-        final (:proof, value: _) = await tree.generateProof(BigInt.from(9), null);
+        final (:proof, value: _) =
+            await tree.generateProof(BigInt.from(9), null);
 
         final proofModel = jsonEncode(proof.toJson());
 
         final proofFromJSON = Proof.fromJson(jsonDecode(proofModel));
 
         expect(
-          jsonEncode(proof.allSiblings().map((e) => e.string()).toList()),
+          jsonEncode(proof.allSiblings().map((e) => e.toString()).toList()),
           equals(jsonEncode(
-              proofFromJSON.allSiblings().map((e) => e.string()).toList())),
+              proofFromJSON.allSiblings().map((e) => e.toString()).toList())),
         );
         expect(proof.existence, equals(proofFromJSON.existence));
         expect(proof.existence, equals(false));
@@ -1284,13 +1285,13 @@ void main() {
         final hashFromOldStr = Hash.fromString(oldSerializedHash);
 
         expect(
-          jsonEncode(hash.string()),
-          equals(jsonEncode(hashFromOldStr.string())),
+          jsonEncode(hash.toString()),
+          equals(jsonEncode(hashFromOldStr.toString())),
         );
 
         expect(jsonEncode(hash.value.toList()),
             equals(jsonEncode(bytes.toList())));
-        expect(hash.string(), equals(hash2.string()));
+        expect(hash.toString(), equals(hash2.toString()));
 
         // deep equals
         for (final (idx, val) in hash.value.indexed) {
@@ -1308,15 +1309,15 @@ void main() {
         var cvp = await mt.generateSCVerifierProof(BigInt.one, ZERO_HASH);
 
         expect(
-            cvp.root.string(),
+            cvp.root.toString(),
             equals(
                 '6525056641794203554583616941316772618766382307684970171204065038799368146416'));
         expect(cvp.siblings.length, equals(0));
-        expect(cvp.oldKey.string(), equals('0'));
-        expect(cvp.oldValue.string(), equals('0'));
+        expect(cvp.oldKey.toString(), equals('0'));
+        expect(cvp.oldValue.toString(), equals('0'));
         expect(cvp.isOld0, equals(false));
-        expect(cvp.key.string(), equals('1'));
-        expect(cvp.value.string(), equals('11'));
+        expect(cvp.key.toString(), equals('1'));
+        expect(cvp.value.toString(), equals('11'));
         expect(cvp.fnc, equals(0));
 
         await mt.add(BigInt.parse('2'), BigInt.parse('22'));
@@ -1327,30 +1328,54 @@ void main() {
             await mt.generateCircomVerifierProof(BigInt.parse('2'), ZERO_HASH);
 
         expect(
-          cvp.root.string(),
+          cvp.root.toString(),
           equals(
               '13558168455220559042747853958949063046226645447188878859760119761585093422436'),
         );
         expect(cvp.siblings.length, equals(4));
         expect(
-          cvp.siblings[0].string(),
+          cvp.siblings[0].toString(),
           equals(
               '11620130507635441932056895853942898236773847390796721536119314875877874016518'),
         );
         expect(
-          cvp.siblings[1].string(),
+          cvp.siblings[1].toString(),
           equals(
               '5158240518874928563648144881543092238925265313977134167935552944620041388700'),
         );
         cvp.siblings.sublist(3).forEach((s) {
-          expect(s.string(), equals('0'));
+          expect(s.toString(), equals('0'));
         });
-        expect(cvp.oldKey.string(), equals('0'));
-        expect(cvp.oldValue.string(), equals('0'));
+        expect(cvp.oldKey.toString(), equals('0'));
+        expect(cvp.oldValue.toString(), equals('0'));
         expect(cvp.isOld0, equals(false));
-        expect(cvp.key.string(), equals('2'));
-        expect(cvp.value.string(), equals('22'));
+        expect(cvp.key.toString(), equals('2'));
+        expect(cvp.value.toString(), equals('22'));
         expect(cvp.fnc, equals(0));
+      });
+
+      test('calcualte depth for mtp', () async {
+        final storage = getTreeStorage(prefix: 'calculatedepth');
+        final mt = Merkletree(storage, true, 40);
+        await mt.add(BigInt.from(1), BigInt.from(2));
+        await mt.add(BigInt.from(3), BigInt.from(8));
+        await mt.add(BigInt.from(7), BigInt.from(8));
+        await mt.add(BigInt.from(9), BigInt.from(8));
+        final (:proof, value: _) =
+            await mt.generateProof(BigInt.from(11), await mt.root());
+        const given =
+            '{ "existence": false, "siblings": [ "0", "12166698708103333637493481507263348370172773813051235807348785759284762677336", "7750564177398573185975752951631372712868228752107043582052272719841058100111", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ], "node_aux": { "key": "3", "value": "8" }}';
+        final p = Proof.fromJson(jsonDecode(given));
+
+        expect(proof.allSiblings(), p.allSiblings());
+        expect(proof.nodeAux, p.nodeAux);
+        expect(proof.existence, p.existence);
+        var isValid = await verifyProof(
+            await mt.root(), proof, BigInt.from(11), BigInt.from(0));
+        expect(isValid, true);
+        isValid = await verifyProof(
+            await mt.root(), p, BigInt.from(11), BigInt.from(0));
+        expect(isValid, true);
       });
 
       test('test str2Bytes', () async {
